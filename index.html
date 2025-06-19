@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Untitled</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Click Hero 🤑</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #121212;
+      color: white;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #clicker {
+      font-size: 80px;
+      cursor: pointer;
+      margin: 20px 0;
+      transition: transform 0.1s;
+    }
+    #clicker:active {
+      transform: scale(1.2);
+    }
+    .coins {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+    .shop {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 20px;
+      margin: 20px;
+    }
+    .upgrade {
+      background: #333;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px auto;
+      max-width: 300px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .upgrade:hover {
+      background: #444;
+    }
+    .level {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    .share-button {
+      padding: 15px;
+      background: #00cc66;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      margin: 20px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🤑 Click Hero</h1>
+  <div class="coins">💸 Coiny: <span id="coins">0</span></div>
+  <div class="level">📈 Level: <span id="level">1</span></div>
+
+  <div id="clicker">🤑</div>
+
+  <div class="shop">
+    <h2>🛒 Shop</h2>
+    <div class="upgrade" onclick="buyUpgrade(1)">➕ +1 coin za klik (Cena: <span id="cost1">10</span>)</div>
+    <div class="upgrade" onclick="buyCPS()">⚙️ Auto-klik (CPS: <span id="cps">0</span>) (Cena: <span id="cpsCost">50</span>)</div>
+  </div>
+
+  <!-- Sdílecí tlačítko -->
+  <button onclick="shareGame()" class="share-button">🔗 Sdílej hru</button>
+
+  <script>
+    let coins = 0;
+    let coinsPerClick = 1;
+    let cps = 0;
+    let level = 1;
+
+    const coinsEl = document.getElementById('coins');
+    const levelEl = document.getElementById('level');
+    const cost1El = document.getElementById('cost1');
+    const cpsEl = document.getElementById('cps');
+    const cpsCostEl = document.getElementById('cpsCost');
+
+    let upgradeCost = 10;
+    let cpsCost = 50;
+
+    document.getElementById('clicker').addEventListener('click', () => {
+      coins += coinsPerClick;
+      updateDisplay();
+      checkLevel();
+    });
+
+    function buyUpgrade(amount) {
+      if (coins >= upgradeCost) {
+        coins -= upgradeCost;
+        coinsPerClick += amount;
+        upgradeCost = Math.floor(upgradeCost * 1.5);
+        cost1El.textContent = upgradeCost;
+        updateDisplay();
+      }
+    }
+
+    function buyCPS() {
+      if (coins >= cpsCost) {
+        coins -= cpsCost;
+        cps += 1;
+        cpsCost = Math.floor(cpsCost * 2);
+        cpsCostEl.textContent = cpsCost;
+        cpsEl.textContent = cps;
+        updateDisplay();
+      }
+    }
+
+    function updateDisplay() {
+      coinsEl.textContent = coins;
+    }
+
+    function checkLevel() {
+      const newLevel = Math.floor(coins / 100) + 1;
+      if (newLevel > level) {
+        level = newLevel;
+        levelEl.textContent = level;
+      }
+    }
+
+    // Auto-clicker
+    setInterval(() => {
+      coins += cps;
+      updateDisplay();
+      checkLevel();
+    }, 1000);
+
+    // Sdílení
+    function shareGame() {
+      const shareData = {
+        title: 'Click Hero 🤑',
+        text: 'Zahraj si moji klikací hru!',
+        url: window.location.href
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(err => alert("Nepodařilo se sdílet."));
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Odkaz byl zkopírován do schránky!");
+      }
+    }
+  </script>
+
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
