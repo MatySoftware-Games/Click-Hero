@@ -1,14 +1,4 @@
 <!DOCTYPE html>
-<html lang="en" >
-<head>
-  <meta charset="UTF-8">
-  <title>Untitled</title>
-  
-
-</head>
-<body>
-<!-- partial:index.partial.html -->
-<!DOCTYPE html>
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
@@ -151,26 +141,22 @@
       checkLevel();
     }, 1000);
 
-    // Sdílení
+    // Sdílení na pevný odkaz
     function shareGame() {
       const shareData = {
         title: 'Click Hero 🤑',
         text: 'Zahraj si moji klikací hru!',
-        url: window.location.href
+        url: 'https://matysoftware-games.github.io/Click-Hero/'
       };
 
       if (navigator.share) {
         navigator.share(shareData).catch(err => alert("Nepodařilo se sdílet."));
       } else {
-        navigator.clipboard.writeText(window.location.href);
-        alert("Odkaz byl zkopírován do schránky!");
+        navigator.clipboard.writeText(shareData.url);
+        alert("Odkaz zkopírován do schránky: " + shareData.url);
       }
     }
   </script>
 
-</body>
-</html>
-<!-- partial -->
-  
 </body>
 </html>
