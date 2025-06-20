@@ -5,67 +5,55 @@
   <title>Click Hero 🤑</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #121212;
-      color: white;
-      text-align: center;
+      margin: 0; font-family: Arial, sans-serif;
+      background: #121212; color: white;
+      text-align: center; padding: 10px; overflow-x: hidden;
     }
-    h1 {
-      margin-top: 20px;
-    }
+    h1 { font-size: 28px; margin-top: 10px; }
     #clicker {
-      font-size: 80px;
-      cursor: pointer;
-      margin: 20px 0;
-      transition: transform 0.1s;
+      font-size: 64px; cursor: pointer;
+      margin: 20px 0; transition: transform 0.1s;
+      position: relative;
     }
-    #clicker:active {
-      transform: scale(1.2);
-    }
-    .coins {
-      font-size: 24px;
-      margin: 10px 0;
+    #clicker:active { transform: scale(1.2); }
+    .coins, .level, .prestige-points {
+      font-size: 18px; margin: 6px 0;
     }
     .shop {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 20px;
-      margin: 20px;
+      background: #1e1e1e; padding: 15px;
+      border-radius: 15px; margin: 20px auto;
+      max-width: 90%;
     }
-    .upgrade {
-      background: #333;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 10px auto;
-      max-width: 300px;
-      cursor: pointer;
-      transition: background 0.2s;
+    .upgrade, .prestige-button {
+      background: #333; padding: 12px;
+      border-radius: 10px; margin: 10px auto;
+      cursor: pointer; transition: background 0.2s;
+      font-size: 16px; max-width: 280px;
     }
-    .upgrade:hover {
-      background: #444;
-    }
-    .level {
-      font-size: 18px;
-      margin-top: 10px;
-    }
+    .upgrade:hover, .prestige-button:hover { background: #444; }
     .share-button {
-      padding: 15px;
-      background: #00cc66;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      margin: 20px auto 10px;
-      display: block;
+      padding: 12px 18px; background: #00cc66;
+      border: none; border-radius: 10px;
+      color: white; font-size: 16px;
+      cursor: pointer; margin: 20px auto 10px; display: block;
     }
-    .qr-code {
-      margin: 10px auto 30px;
-      width: 200px;
-      height: 200px;
+    .qr-code { margin: 10px auto 30px; width: 180px; height: 180px; }
+    .sparkle {
+      position: absolute; color: gold;
+      font-weight: bold; animation: floatUp 1s ease-out forwards;
+      pointer-events: none;
     }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-50px); }
+    }
+    .leaderboard {
+      background: #1e1e1e; padding: 10px;
+      margin-top: 10px; border-radius: 10px;
+    }
+    .leaderboard h3 { margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -73,6 +61,7 @@
   <h1>🤑 Click Hero</h1>
   <div class="coins">💸 Coiny: <span id="coins">0</span></div>
   <div class="level">📈 Level: <span id="level">1</span></div>
+  <div class="prestige-points">🏆 Prestige: <span id="prestige">0</span></div>
 
   <div id="clicker">🤑</div>
 
@@ -82,40 +71,95 @@
     <div class="upgrade" onclick="buyCPS()">⚙️ Auto-klik (CPS: <span id="cps">0</span>) (Cena: <span id="cpsCost">50</span>)</div>
   </div>
 
-  <!-- Sdílecí tlačítko -->
+  <div class="prestige-button" onclick="tryPrestige()">🔁 Prestige (za 10 000💸)</div>
+
+  <div class="leaderboard">
+    <h3>🥇 Nejvyšší skóre:</h3>
+    <ol id="leaderboard-list"></ol>
+  </div>
+
   <button onclick="shareGame()" class="share-button">🔗 Sdílej hru</button>
 
-  <!-- QR kód -->
   <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://matysoftware-games.github.io/Click-Hero/" alt="QR kód na hru">
 
+  <audio id="click-sound" src="https://freesound.org/data/previews/341/341695_6261266-lq.mp3" preload="auto"></audio>
+
   <script>
-    let coins = 0;
-    let coinsPerClick = 1;
-    let cps = 0;
-    let level = 1;
+    let coins = 0, coinsPerClick = 1, cps = 0, level = 1, prestige = 0;
+    let upgradeCost = 10, cpsCost = 50;
 
     const coinsEl = document.getElementById('coins');
     const levelEl = document.getElementById('level');
     const cost1El = document.getElementById('cost1');
     const cpsEl = document.getElementById('cps');
     const cpsCostEl = document.getElementById('cpsCost');
+    const prestigeEl = document.getElementById('prestige');
+    const clicker = document.getElementById('clicker');
+    const clickSound = document.getElementById('click-sound');
 
-    let upgradeCost = 10;
-    let cpsCost = 50;
+    // Načíst uložená data
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem("clickHeroSave"));
+      if (saved) {
+        coins = saved.coins || 0;
+        coinsPerClick = saved.coinsPerClick || 1;
+        cps = saved.cps || 0;
+        level = saved.level || 1;
+        upgradeCost = saved.upgradeCost || 10;
+        cpsCost = saved.cpsCost || 50;
+        prestige = saved.prestige || 0;
+      }
+      updateDisplay();
+      updateLeaderboardUI();
+    };
 
-    document.getElementById('clicker').addEventListener('click', () => {
-      coins += coinsPerClick;
+    function saveProgress() {
+      localStorage.setItem("clickHeroSave", JSON.stringify({
+        coins, coinsPerClick, cps, level, upgradeCost, cpsCost, prestige
+      }));
+    }
+
+    function updateDisplay() {
+      coinsEl.textContent = Math.floor(coins);
+      levelEl.textContent = level;
+      cost1El.textContent = upgradeCost;
+      cpsEl.textContent = cps;
+      cpsCostEl.textContent = cpsCost;
+      prestigeEl.textContent = prestige;
+    }
+
+    clicker.addEventListener('click', (e) => {
+      let bonus = 1 + (prestige * 0.1);
+      coins += coinsPerClick * bonus;
       updateDisplay();
       checkLevel();
+      saveProgress();
+      playClickSound();
+      createSparkle(e);
     });
+
+    function playClickSound() {
+      clickSound.currentTime = 0;
+      clickSound.play().catch(() => {});
+    }
+
+    function createSparkle(e) {
+      const sparkle = document.createElement("div");
+      sparkle.className = "sparkle";
+      sparkle.textContent = "+" + coinsPerClick;
+      sparkle.style.left = (e.clientX - 20) + "px";
+      sparkle.style.top = (e.clientY - 30) + "px";
+      document.body.appendChild(sparkle);
+      setTimeout(() => sparkle.remove(), 1000);
+    }
 
     function buyUpgrade(amount) {
       if (coins >= upgradeCost) {
         coins -= upgradeCost;
         coinsPerClick += amount;
         upgradeCost = Math.floor(upgradeCost * 1.5);
-        cost1El.textContent = upgradeCost;
         updateDisplay();
+        saveProgress();
       }
     }
 
@@ -124,14 +168,9 @@
         coins -= cpsCost;
         cps += 1;
         cpsCost = Math.floor(cpsCost * 2);
-        cpsCostEl.textContent = cpsCost;
-        cpsEl.textContent = cps;
         updateDisplay();
+        saveProgress();
       }
-    }
-
-    function updateDisplay() {
-      coinsEl.textContent = coins;
     }
 
     function checkLevel() {
@@ -142,26 +181,70 @@
       }
     }
 
-    // Auto-clicker
     setInterval(() => {
-      coins += cps;
+      coins += cps * (1 + prestige * 0.1);
       updateDisplay();
       checkLevel();
+      saveProgress();
     }, 1000);
 
-    // Sdílení na pevný odkaz
-    function shareGame() {
-      const shareData = {
-        title: 'Click Hero 🤑',
-        text: 'Zahraj si moji klikací hru!',
-        url: 'https://matysoftware-games.github.io/Click-Hero/'
-      };
-
-      if (navigator.share) {
-        navigator.share(shareData).catch(err => alert("Nepodařilo se sdílet."));
+    function tryPrestige() {
+      if (coins >= 10000) {
+        saveToLeaderboard();
+        coins = 0;
+        coinsPerClick = 1;
+        cps = 0;
+        upgradeCost = 10;
+        cpsCost = 50;
+        level = 1;
+        prestige += 1;
+        updateDisplay();
+        saveProgress();
+        alert("Prestige aktivován! Získal jsi bonus +10% za každý bod.");
       } else {
-        navigator.clipboard.writeText(shareData.url);
-        alert("Odkaz zkopírován do schránky: " + shareData.url);
+        alert("Potřebuješ alespoň 10 000 coinů pro Prestige.");
+      }
+    }
+
+    function saveToLeaderboard() {
+      let leaderboard = JSON.parse(localStorage.getItem("clickHeroLeaderboard")) || [];
+      leaderboard.push({ score: Math.floor(coins), date: new Date().toLocaleDateString() });
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5);
+      localStorage.setItem("clickHeroLeaderboard", JSON.stringify(leaderboard));
+      updateLeaderboardUI();
+    }
+
+    function updateLeaderboardUI() {
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = "";
+      const leaderboard = JSON.parse(localStorage.getItem("clickHeroLeaderboard")) || [];
+      leaderboard.forEach((entry, i) => {
+        const li = document.createElement("li");
+        li.textContent = `#${i + 1} - ${entry.score} 💸 (${entry.date})`;
+        list.appendChild(li);
+      });
+    }
+
+    function shareGame() {
+      const shareUrl = 'https://matysoftware-games.github.io/Click-Hero/';
+      if (navigator.share) {
+        navigator.share({
+          title: 'Click Hero 🤑',
+          text: 'Zahraj si moji klikací hru!',
+          url: shareUrl
+        }).catch(() => {
+          navigator.clipboard.writeText(shareUrl);
+          alert("Odkaz byl zkopírován do schránky:\n" + shareUrl);
+        });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert("Odkaz zkopírován do schránky:\n" + shareUrl);
+        }).catch(() => {
+          alert("Nepodařilo se zkopírovat odkaz.");
+        });
+      } else {
+        alert("Sdílení není na tomto zařízení podporováno.");
       }
     }
   </script>
